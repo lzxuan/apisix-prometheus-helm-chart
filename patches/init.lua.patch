@@ -1,0 +1,102 @@
+--- init.lua	2022-06-08 14:23:29.665985685 +0800
++++ init.lua	2022-06-08 14:28:36.952686959 +0800
+@@ -41,6 +41,75 @@
+
+ local endpoint_buffer = {}
+
++
++--- PATCH START ---
++local UPDATE_ETCD = {{ .Values.apisix.discovery.registry.kubernetes.updateEtcd }}
++
++
++local function put_upstream(endpoint)
++    local admin_upstreams = require("apisix.admin.upstreams")
++    local namespace = endpoint.metadata.namespace
++    local name = endpoint.metadata.name
++    local added = {}
++
++    for port_name, _ in pairs(endpoint_buffer) do
++        local id = namespace .. "_" .. name .. "_" .. port_name
++        if not added[id] then
++            local conf = {
++                type = "roundrobin",
++                service_name = namespace .. "/" .. name .. ":" .. port_name,
++                discovery_type = "kubernetes",
++            }
++            local res, err = admin_upstreams.put(id, conf)
++            if res > 199 and res < 300 then
++                added[id] = true
++                core.log.notice("Successful to put kubernetes upstream: ", id)
++            else
++                core.log.error("Failed to put kubernetes upstream (", id, "): ",
++                               err.error_msg)
++            end
++        end
++    end
++end
++
++
++local function delete_upstream(endpoint)
++    local admin_upstreams = require("apisix.admin.upstreams")
++    local namespace = endpoint.metadata.namespace
++    local name = endpoint.metadata.name
++    local deleted = {}
++
++    for _, subset in ipairs(endpoint.subsets or {}) do
++        if subset.addresses then
++            for _, port in ipairs(subset.ports or {}) do
++                local port_name
++                if port.name then
++                    port_name = port.name
++                elseif port.targetPort then
++                    port_name = tostring(port.targetPort)
++                else
++                    port_name = tostring(port.port)
++                end
++
++                local id = namespace .. "_" .. name .. "_" .. port_name
++                if not deleted[id] then
++                    local res, err = admin_upstreams.delete(id)
++                    if res > 199 and res < 300 then
++                        deleted[id] = true
++                        core.log.notice("Successful to delete kubernetes upstream: ",
++                                        id)
++                    else
++                        core.log.error("Failed to delete kubernetes upstream (",
++                                       id, "): ", err.error_msg)
++                    end
++                end
++            end
++        end
++    end
++end
++---- PATCH END ----
++
++
+ local function sort_nodes_cmp(left, right)
+     if left.host ~= right.host then
+         return left.host < right.host
+@@ -111,6 +180,12 @@
+         core.log.error("set endpoint into discovery DICT failed, ", err)
+         endpoint_dict:delete(endpoint_key .. "#version")
+     end
++
++    --- PATCH START ---
++    if (not err) and UPDATE_ETCD then
++        put_upstream(endpoint)
++    end
++    ---- PATCH END ----
+ end
+
+
+@@ -124,6 +199,12 @@
+     local endpoint_key = endpoint.metadata.namespace .. "/" .. endpoint.metadata.name
+     endpoint_dict:delete(endpoint_key .. "#version")
+     endpoint_dict:delete(endpoint_key)
++
++    --- PATCH START ---
++    if UPDATE_ETCD then
++        delete_upstream(endpoint)
++    end
++    ---- PATCH END ----
+ end

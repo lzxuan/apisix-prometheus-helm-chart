@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apisix-discovery-kubernetes
+data:
+  init.lua: |
+    {{- tpl (.Files.Get "apisix-discovery-kubernetes/init.lua") . | nindent 4 }}
+
+
+{{- range $path, $_ := .Files.Glob "apisix-plugins/*.lua" }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apisix-plugin-{{ trimSuffix (ext $path) (base $path) }}
+data:
+  {{ base $path }}: |
+    {{- $.Files.Get $path | nindent 4 }}
+{{- end }}

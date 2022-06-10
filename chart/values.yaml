@@ -1,0 +1,153 @@
+apisix:
+  serviceAccountName: apisix-kubernetes-discovery # patch for adding ServiceAccount
+
+  fullnameOverride: apisix
+
+  apisix:
+    image:
+      repository: limzx/apisix
+      tag: 2.14.1-alpine
+    replicaCount: 1
+    workerProcesses: 1 # patch for configuring worker_processes
+    nodeSelector: {}
+
+  gateway:
+    type: NodePort
+    externalTrafficPolicy: Local
+    http:
+      nodePort: 30080
+
+  # admin:
+  #   enabled: true
+  #   credentials:
+  #     admin: edd1c9f034335f136f87ad84b625c8f1
+  #     viewer: 4054f7cf07e344346cd3f287985e76a2
+  #   allow:
+  #     ipList:
+  #       - 127.0.0.1/24
+
+  customPlugins:
+    enabled: true
+    luaPath: /opt/apisix-custom-plugins/?.lua
+    plugins:
+      - name: maxminddb
+        attrs:
+          dummy: true # to avoid apisix throwing yaml syntax error: failed to classify line: {}
+        configMap:
+          name: apisix-plugin-maxminddb
+          mounts:
+            - key: maxminddb.lua
+              path: /opt/apisix-custom-plugins/apisix/plugins/maxminddb.lua
+      - name: ip-country-restriction
+        attrs:
+          dummy: true # to avoid apisix throwing yaml error: failed to classify line: {}
+        configMap:
+          name: apisix-plugin-ip-country-restriction
+          mounts:
+            - key: ip-country-restriction.lua
+              path: /opt/apisix-custom-plugins/apisix/plugins/ip-country-restriction.lua
+
+  extraVolumes:
+    - name: apisix-discovery-kubernetes
+      configMap:
+        name: apisix-discovery-kubernetes
+
+  extraVolumeMounts:
+    - name: apisix-discovery-kubernetes
+      mountPath: /usr/local/apisix/apisix/discovery/kubernetes/init.lua
+      subPath: init.lua
+      readOnly: true
+
+  discovery:
+    enabled: true
+    registry:
+      kubernetes:
+        updateEtcd: true # patch for auto-updating upstreams in etcd
+        namespace_selector:
+          not_equal: kube-system
+
+  # logs:
+  #   enableAccessLog: true
+  #   errorLogLevel: warn
+
+  configurationSnippet:
+    main: |
+      env KUBERNETES_SERVICE_HOST;
+      env KUBERNETES_SERVICE_PORT;
+
+  serviceMonitor:
+    enabled: true
+
+  etcd:
+    persistence:
+      storageClass: local-path
+      size: 2Gi
+
+  dashboard:
+    enabled: true
+    service:
+      type: NodePort
+    image:
+      repository: limzx/apisix-dashboard
+      tag: 2.13-alpine
+    # config:
+    #   authentication:
+    #     secret: secret
+    #     expireTime: 3600
+    #     users:
+    #       - username: admin
+    #         password: admin
+
+kube-prometheus-stack:
+  enabled: true
+  fullnameOverride: kube-prometheus-stack
+
+  prometheus:
+    service:
+      type: NodePort
+      nodePort: 30090
+    prometheusSpec:
+      serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitor:
+      selfMonitor: false
+
+  prometheusOperator:
+    enabled: true
+    serviceMonitor:
+      selfMonitor: false
+
+  grafana:
+    enabled: false
+
+  alertmanager:
+    enabled: false
+
+  kubeApiServer:
+    enabled: false
+
+  kubelet:
+    enabled: false
+
+  kubeControllerManager:
+    enabled: false
+
+  coreDns:
+    enabled: false
+
+  kubeDns:
+    enabled: false
+
+  kubeEtcd:
+    enabled: false
+
+  kubeScheduler:
+    enabled: false
+
+  kubeProxy:
+    enabled: false
+
+  kubeStateMetrics:
+    enabled: false
+
+  nodeExporter:
+    enabled: false

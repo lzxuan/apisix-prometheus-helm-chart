@@ -1,0 +1,9 @@
+dependencies:
+- name: apisix
+  repository: ""
+  version: 0.10.x
+- name: kube-prometheus-stack
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 35.3.1
+digest: sha256:5987cd33d95554ae2ea6610f2b97c99f68f0dce0397e67793554c2bd807b501b
+generated: "2022-05-27T18:34:54.023281844+08:00"

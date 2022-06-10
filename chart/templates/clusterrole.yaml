@@ -1,0 +1,10 @@
+{{- if and .Values.apisix.discovery.enabled (hasKey .Values.apisix.discovery.registry "kubernetes") }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Values.apisix.serviceAccountName }}
+rules:
+  - apiGroups: [""]
+    resources: ["endpoints"]
+    verbs: ["list", "watch"]
+{{- end }}
