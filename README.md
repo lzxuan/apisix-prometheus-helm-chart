@@ -13,7 +13,7 @@ A Helm chart for [Apache APISIX](https://github.com/apache/apisix-helm-chart/tre
    ```
    > Note that the `centos` variant is used in favor of the `alpine` variant due to performance issue.<br>
    > Reference: https://www.bilibili.com/video/BV1WY4y1g7wd?t=2231.9<br>
-   > In stress test, around 20% more RPS was observed by switching from the `alpine` variant to the `centos` variant.
+   > In personal stress test running with 1 worker/core at K3s on OpenStack, around 20% more RPS was observed by switching from the `alpine` variant to the `centos` variant.
 
 2. Build custom `apisix-dashboard` docker image.
    * Modify schema.json for `maxminddb` & `ip-country-restriction` plugins.
