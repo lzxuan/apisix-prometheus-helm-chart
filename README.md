@@ -9,8 +9,11 @@ A Helm chart for [Apache APISIX](https://github.com/apache/apisix-helm-chart/tre
    * Add [geoipupdate](https://github.com/maxmind/geoipupdate).
    * Add [luajit-geoip](https://github.com/leafo/luajit-geoip).
    ```
-   make docker-build-apisix APISIX_GEOIPUPDATE_ACCOUNT_ID='' APISIX_GEOIPUPDATE_LICENSE_KEY=''
+   make docker-build-apisix-centos APISIX_GEOIPUPDATE_ACCOUNT_ID='' APISIX_GEOIPUPDATE_LICENSE_KEY=''
    ```
+   > Note that the `centos` variant is used in favor of the `alpine` variant due to performance issue.<br>
+   > Reference: https://www.bilibili.com/video/BV1WY4y1g7wd?t=2231.9<br>
+   > In stress test, around 20% more RPS was observed by switching from the `alpine` variant to the `centos` variant.
 
 2. Build custom `apisix-dashboard` docker image.
    * Modify schema.json for `maxminddb` & `ip-country-restriction` plugins.
